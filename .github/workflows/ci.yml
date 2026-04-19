@@ -13,7 +13,7 @@ env:
 
 jobs:
   test:
-    name: Unit & Integration Tests
+    name: Unit Tests
     runs-on: ubuntu-latest
 
     steps:
@@ -30,17 +30,15 @@ jobs:
       - name: Grant execute permission to mvnw
         run: chmod +x mvnw
 
-      - name: Run full test suite (unit + integration)
-        run: ./mvnw verify --batch-mode --no-transfer-progress
+      - name: Run unit tests
+        run: ./mvnw test --batch-mode --no-transfer-progress
 
       - name: Publish test report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: surefire-failsafe-reports
-          path: |
-            target/surefire-reports/
-            target/failsafe-reports/
+          name: surefire-reports
+          path: target/surefire-reports/
           retention-days: 7
 
   open-pr:
@@ -75,15 +73,13 @@ jobs:
             ${{ github.sha }}
 
             ### Status dos testes
-            Todos os testes passaram com sucesso antes da abertura deste PR:
+            Testes unitários passaram com sucesso antes da abertura deste PR:
 
             - **Testes unitários** (`MoneyTest`, `AccountTest`, `PaymentTest`, `PaymentControllerTest`) — execução rápida, sem Docker.
-            - **Testes de integração** (`ProcessPaymentUseCaseIntegrationTest`, `IdempotencyIntegrationTest`) — PostgreSQL e Redis via Testcontainers.
+
+            > Os testes de integração (Testcontainers) são executados na esteira `promote-to-main.yml`, durante o merge de `dev` → `main`.
 
             ### O que foi validado
-            - Exactly-once semantics via `X-Idempotency-Key` (Redis fast-path + DB fallback).
-            - Pessimistic Locking com ordered UUID acquisition (zero deadlocks).
-            - Transactional Outbox Pattern — atomicidade entre escrita no PostgreSQL e publicação no Kafka.
             - Regras de domínio: `Money`, `Account`, `Payment`.
             - Contrato HTTP: status 201/200/422/404/400.
 
