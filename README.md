@@ -15,7 +15,6 @@ Motor de pagamentos Pix de alta concorrência com **exactly-once semantics**, co
 - [Testes](#testes)
 - [Evidências](#evidências)
 - [Estrutura de Pastas](#estrutura-de-pastas)
-- [Autora](#autora)
 
 ---
 
@@ -287,72 +286,29 @@ curl -X POST http://localhost:8080/api/v1/payments \
 
 ## Testes
 
-A estratégia de testes é dividida em três níveis com responsabilidades distintas, separados por plugins Maven para que cada nível possa ser executado de forma independente.
-
-### Nível 1 — Testes unitários (sem Docker)
+### Testes unitários (sem Docker)
 
 ```bash
 ./mvnw test
 ```
 
-Executados pelo **Maven Surefire**. Sem Spring context, sem banco, sem Docker. Rodam em milissegundos e validam as invariantes do domínio de forma isolada.
+Cobre domínio puro (`MoneyTest`, `AccountTest`, `PaymentTest`) e camada REST (`PaymentControllerTest` com `@WebMvcTest`). Execução em ~45s.
 
-| Classe | O que valida |
-|---|---|
-| `MoneyTest` | Criação com amount negativo/nulo, moeda nula/branca, `add`, `subtract`, `isGreaterThanOrEqualTo`, moedas diferentes lançam exceção |
-| `AccountTest` | `debit` reduz saldo, `credit` aumenta saldo, saldo insuficiente lança `InsufficientFundsException`, conta inativa bloqueia débito e crédito |
-| `PaymentTest` | Status inicial `PENDING`, `complete()` transita para `COMPLETED`, `fail()` transita para `FAILED`, transições duplas lançam `IllegalStateException` |
-| `PaymentControllerTest` | HTTP 201 (novo pagamento), 200 (idempotente), 422 (saldo insuficiente), 404 (conta inexistente / pix key inválida), 400 (header ausente, campo nulo, valor negativo) |
-
----
-
-### Nível 2 — Testes de integração (requer Docker)
+### Testes de integração (requer Docker)
 
 ```bash
 ./mvnw verify
 ```
 
-Executados pelo **Maven Failsafe**. Sobem PostgreSQL 16 e Redis 7 via **Testcontainers** com o padrão Singleton Container (um único container por JVM, compartilhado entre todos os testes). O Kafka é mockado via `@MockitoBean OutboxRelayWorker` para isolar o domínio de pagamentos da mensageria.
+`ProcessPaymentUseCaseIntegrationTest` e `IdempotencyIntegrationTest` sobem PostgreSQL e Redis via Testcontainers. Cobrem: pagamento válido, saldo insuficiente, idempotência por Redis hit, idempotência por DB fallback, e rehidratação do cache após eviction.
 
-#### `ProcessPaymentUseCaseIntegrationTest`
-
-Valida o fluxo de pagamento com banco real:
-
-| Cenário | Verificação |
-|---|---|
-| Pagamento válido | Saldo debitado, saldo creditado, `payment.status = COMPLETED`, 1 registro em `outbox_events` com `status = PENDING` |
-| Idempotência via DB | Mesma `transactionId` duas vezes: segundo request retorna `created = false` sem novo débito |
-| Saldo insuficiente | `InsufficientFundsException` lançada, zero linhas em `payments` e `outbox_events`, saldo inalterado |
-| Atomicidade do Outbox | `outbox_events.aggregate_id` = `payments.id` (mesma transação) |
-
-#### `IdempotencyIntegrationTest`
-
-Valida as três camadas de idempotência com Redis real:
-
-| Cenário | Verificação |
-|---|---|
-| Redis HIT | Segunda chamada servida do cache sem acesso ao banco; saldo alterado apenas uma vez; `created = false` |
-| Redis eviction → DB fallback | Redis esvaziado após primeiro commit; segunda chamada encontra pagamento no banco e rehidrata o cache |
-| Pre-transaction fast-path | Redis vazio + pagamento já no Postgres: use case resolve via `SELECT` sem `FOR UPDATE`, sem débito extra, Redis repovoado |
-
-> O terceiro cenário é o mais crítico: valida que o sistema não adquire row locks desnecessários em retentativas, mesmo quando o cache foi perdido.
-
----
-
-### Nível 3 — Teste de carga (k6)
+### Teste de carga (k6)
 
 ```bash
 k6 run observability/k6/stress-payments.js
 ```
 
-30 VUs simultâneos por 60 segundos. Carga distribuída entre 4 pares de contas para simular isolamento por usuário e reduzir contenção de locks.
-
-Thresholds validados:
-
-| Métrica | Threshold | Resultado |
-|---|---|---|
-| `http_req_failed` | `< 0.05%` | `0.00%` |
-| `http_req_duration p(95)` | `< 3000ms` | `1.58s` |
+30 VUs, 60s, 4 pares de contas distribuindo contenção de locks.
 
 ---
 
@@ -365,9 +321,9 @@ O vídeo demonstra o comportamento do sistema frente a retentativas com o mesmo 
 - **Primeira requisição**: Redis miss → processamento completo → `201 Created` com `created: true`.
 - **Segunda requisição (mesmo key)**: Redis hit → retorno imediato sem tocar o banco → `200 OK` com `created: false`.
 
-https://github.com/user-attachments/assets/api-contract-swagger.mp4
+https://github.com/akporto/pix-payment-engine/blob/feature/pix-payment-engine/assets/api-contract-swagger.mp4
 
-> Para reproduzir localmente: acesse http://localhost:8080/swagger-ui.html, execute `POST /api/v1/payments` duas vezes com o mesmo `X-Idempotency-Key`.
+> Clique no link acima para assistir no GitHub. Para reproduzir localmente: acesse http://localhost:8080/swagger-ui.html, execute `POST /api/v1/payments` duas vezes com o mesmo `X-Idempotency-Key`.
 
 ---
 
@@ -482,4 +438,4 @@ pix-payment-engine/
   </tr>
 </table>
 
-Software Developer com foco em backend, cloud e arquiteturas distribuídas. Este projeto foi desenvolvido como simulador de alta concorrência aplicando Clean Architecture, padrões de consistência transacional e observabilidade em sistemas financeiros.
+Este projeto foi desenvolvido como simulador de alta concorrência aplicando Clean Architecture, padrões de consistência transacional e observabilidade em sistemas financeiros.

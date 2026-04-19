@@ -26,6 +26,9 @@ jobs:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           cache: maven
 
+      - name: Grant execute permission to mvnw
+        run: chmod +x mvnw
+
       - name: Run full test suite (unit + integration)
         run: ./mvnw verify --batch-mode --no-transfer-progress
 
