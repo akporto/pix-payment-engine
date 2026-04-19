@@ -4,7 +4,7 @@ on:
   push:
     branches-ignore:
       - main
-      - dev
+      - develop
 
 env:
   JAVA_VERSION: "21"
@@ -60,14 +60,14 @@ jobs:
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          base: dev
+          base: develop
           branch: ${{ github.ref_name }}
           title: "ci: [Auto-PR] Integration of branch ${{ github.ref_name }}"
           body: |
             ## Auto-PR gerado pelo workflow de CI
 
             ### Branch
-            `${{ github.ref_name }}` → `dev`
+            `${{ github.ref_name }}` → `develop`
 
             ### Commit
             ${{ github.sha }}

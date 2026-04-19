@@ -3,7 +3,7 @@ name: Promote dev → main
 on:
   push:
     branches:
-      - dev
+      - develop
 
 env:
   JAVA_VERSION: "21"
@@ -62,7 +62,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: main
-          branch: dev
+          branch: develop
           title: "release: [Auto-PR] Promote dev → main (${{ github.sha }})"
           body: |
             ## Promoção automática: `dev` → `main`
