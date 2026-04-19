@@ -6,7 +6,7 @@ target/
 *.iml
 *.iws
 *.ipr
-out/
+/out/
 
 # ── IDE — VS Code / Cursor ────────────────────────────────────────────────────
 .vscode/
