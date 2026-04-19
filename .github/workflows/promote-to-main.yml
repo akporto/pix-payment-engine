@@ -1,4 +1,4 @@
-name: Promote dev → main
+name: Promote develop → main
 
 on:
   push:
@@ -36,7 +36,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: surefire-failsafe-reports-dev
+          name: surefire-failsafe-reports-develop
           path: |
             target/surefire-reports/
             target/failsafe-reports/
@@ -58,38 +58,37 @@ jobs:
           fetch-depth: 0
 
       - name: Create Pull Request to main
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          base: main
-          branch: develop
-          title: "release: [Auto-PR] Promote dev → main (${{ github.sha }})"
-          body: |
-            ## Promoção automática: `dev` → `main`
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base main \
+            --head develop \
+            --title "release: [Auto-PR] Promote develop → main (${{ github.sha }})" \
+            --body "## Promoção automática: \`develop\` → \`main\`
 
-            ### Commit que disparou
-            ${{ github.sha }}
+          ### Commit que disparou
+          ${{ github.sha }}
 
-            ### Status dos testes na branch `dev`
-            Todos os testes passaram antes da abertura deste PR:
+          ### Status dos testes na branch \`develop\`
+          Todos os testes passaram antes da abertura deste PR:
 
-            - **Testes unitários** (`MoneyTest`, `AccountTest`, `PaymentTest`, `PaymentControllerTest`) — sem Docker.
-            - **Testes de integração** (`ProcessPaymentUseCaseIntegrationTest`, `IdempotencyIntegrationTest`) — PostgreSQL e Redis via Testcontainers.
+          - **Testes unitários** (\`MoneyTest\`, \`AccountTest\`, \`PaymentTest\`, \`PaymentControllerTest\`) — sem Docker.
+          - **Testes de integração** (\`ProcessPaymentUseCaseIntegrationTest\`, \`IdempotencyIntegrationTest\`) — PostgreSQL e Redis via Testcontainers.
 
-            ### O que esta release contém
-            - Exactly-once semantics via `X-Idempotency-Key` (Redis fast-path + DB fallback).
-            - Pessimistic Locking com ordered UUID acquisition (zero deadlocks).
-            - Transactional Outbox Pattern — consistência entre PostgreSQL e Kafka.
-            - Regras de domínio validadas: `Money`, `Account`, `Payment`.
-            - Contrato HTTP validado: 201 / 200 / 422 / 404 / 400.
+          ### O que esta release contém
+          - Exactly-once semantics via \`X-Idempotency-Key\` (Redis fast-path + DB fallback).
+          - Pessimistic Locking com ordered UUID acquisition (zero deadlocks).
+          - Transactional Outbox Pattern — consistência entre PostgreSQL e Kafka.
+          - Regras de domínio validadas: \`Money\`, \`Account\`, \`Payment\`.
+          - Contrato HTTP validado: 201 / 200 / 422 / 404 / 400.
 
-            ### Checklist antes do merge
-            - [ ] Revisão de código aprovada por ao menos 1 revisor.
-            - [ ] Sem conflitos com `main`.
-            - [ ] Changelog atualizado (se aplicável).
+          ### Checklist antes do merge
+          - [ ] Revisão de código aprovada por ao menos 1 revisor.
+          - [ ] Sem conflitos com \`main\`.
+          - [ ] Changelog atualizado (se aplicável).
 
-            ---
-            > PR criado automaticamente pelo workflow `promote-to-main.yml` após merge em `dev`.
-            > **Não faça squash/rebase** — preserve o histórico de commits para rastreabilidade.
-          labels: release, automated-pr
-          draft: false
+          ---
+          > PR criado automaticamente pelo workflow \`promote-to-main.yml\` após merge em \`develop\`.
+          > **Não faça squash/rebase** — preserve o histórico de commits para rastreabilidade." \
+          || echo "PR already exists for develop → main."
