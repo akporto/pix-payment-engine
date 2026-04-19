@@ -1,0 +1,46 @@
+# ── Maven build output ────────────────────────────────────────────────────────
+target/
+
+# ── IDE — IntelliJ IDEA ───────────────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# ── IDE — VS Code / Cursor ────────────────────────────────────────────────────
+.vscode/
+.cursor/
+
+# ── IDE — Eclipse ─────────────────────────────────────────────────────────────
+.project
+.classpath
+.settings/
+bin/
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Secrets and local environment ─────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.secret
+application-local.yml
+application-local.properties
+
+# ── Spring Boot dev tools restart trigger ─────────────────────────────────────
+.spring-boot-devtools.properties
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Docker volumes persisted locally ──────────────────────────────────────────
+docker/volumes/
+
+# ── k6 test results ───────────────────────────────────────────────────────────
+observability/k6/results/
+*.k6.json

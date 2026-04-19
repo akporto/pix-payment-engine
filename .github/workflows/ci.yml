@@ -1,0 +1,90 @@
+name: CI — Test & Auto PR to dev
+
+on:
+  push:
+    branches-ignore:
+      - main
+      - dev
+
+env:
+  JAVA_VERSION: "21"
+  JAVA_DISTRIBUTION: temurin
+  MAVEN_OPTS: "-Xmx1024m"
+
+jobs:
+  test:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: maven
+
+      - name: Run full test suite (unit + integration)
+        run: ./mvnw verify --batch-mode --no-transfer-progress
+
+      - name: Publish test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-failsafe-reports
+          path: |
+            target/surefire-reports/
+            target/failsafe-reports/
+          retention-days: 7
+
+  open-pr:
+    name: Open Pull Request → dev
+    runs-on: ubuntu-latest
+    needs: test
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create Pull Request to dev
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: dev
+          branch: ${{ github.ref_name }}
+          title: "ci: [Auto-PR] Integration of branch ${{ github.ref_name }}"
+          body: |
+            ## Auto-PR gerado pelo workflow de CI
+
+            ### Branch
+            `${{ github.ref_name }}` → `dev`
+
+            ### Commit
+            ${{ github.sha }}
+
+            ### Status dos testes
+            Todos os testes passaram com sucesso antes da abertura deste PR:
+
+            - **Testes unitários** (`MoneyTest`, `AccountTest`, `PaymentTest`, `PaymentControllerTest`) — execução rápida, sem Docker.
+            - **Testes de integração** (`ProcessPaymentUseCaseIntegrationTest`, `IdempotencyIntegrationTest`) — PostgreSQL e Redis via Testcontainers.
+
+            ### O que foi validado
+            - Exactly-once semantics via `X-Idempotency-Key` (Redis fast-path + DB fallback).
+            - Pessimistic Locking com ordered UUID acquisition (zero deadlocks).
+            - Transactional Outbox Pattern — atomicidade entre escrita no PostgreSQL e publicação no Kafka.
+            - Regras de domínio: `Money`, `Account`, `Payment`.
+            - Contrato HTTP: status 201/200/422/404/400.
+
+            ---
+            > PR criado automaticamente pelo workflow `ci.yml`. Revise antes de fazer o merge.
+          labels: automated-pr, ci
+          draft: false

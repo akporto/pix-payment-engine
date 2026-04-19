@@ -1,0 +1,53 @@
+{
+  "info": {
+    "name": "Pix Payment Engine",
+    "description": "Collection mínima para `POST /api/v1/payments`.\n\n**Idempotência:** mantenha o mesmo valor em `idempotency_key` e envie duas vezes — a 2ª deve retornar **200** com `created: false`. Para um pagamento novo, altere `idempotency_key` (ou use o environment e gere um novo UUID).\n\n**Variáveis:** edite na aba *Variables* da collection ou use o environment `Local`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8080" },
+    { "key": "sender_account_id", "value": "a0000000-0000-0000-0000-000000000001" },
+    { "key": "receiver_account_id", "value": "b0000000-0000-0000-0000-000000000002" },
+    { "key": "payment_amount", "value": "25.50" },
+    { "key": "idempotency_key", "value": "550e8400-e29b-41d4-a716-446655440000" }
+  ],
+  "item": [
+    {
+      "name": "Payments / Process payment",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Idempotency-Key", "value": "{{idempotency_key}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"senderAccountId\": \"{{sender_account_id}}\",\n  \"receiverAccountId\": \"{{receiver_account_id}}\",\n  \"amount\": {{payment_amount}}\n}"
+        },
+        "url": "{{base_url}}/api/v1/payments",
+        "description": "Primeira chamada com uma chave nova: **201** + `created: true`. Mesma chave e mesmo body: **200** + `created: false`."
+      },
+      "response": []
+    },
+    {
+      "name": "Actuator / Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/actuator/health",
+        "description": "Smoke test rápido (liveness/readiness conforme `application.yml`)."
+      },
+      "response": []
+    },
+    {
+      "name": "Swagger / OpenAPI JSON",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{base_url}}/api-docs",
+        "description": "Documentação OpenAPI 3 gerada pelo springdoc."
+      },
+      "response": []
+    }
+  ]
+}
