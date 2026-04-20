@@ -321,9 +321,9 @@ O vídeo demonstra o comportamento do sistema frente a retentativas com o mesmo 
 - **Primeira requisição**: Redis miss → processamento completo → `201 Created` com `created: true`.
 - **Segunda requisição (mesmo key)**: Redis hit → retorno imediato sem tocar o banco → `200 OK` com `created: false`.
 
-https://github.com/akporto/pix-payment-engine/blob/feature/pix-payment-engine/assets/api-contract-swagger.mp4
+![Demonstração da API](assets/api-contract-swagger.gif)
 
-> Clique no link acima para assistir no GitHub. Para reproduzir localmente: acesse http://localhost:8080/swagger-ui.html, execute `POST /api/v1/payments` duas vezes com o mesmo `X-Idempotency-Key`.
+> Para reproduzir localmente: acesse http://localhost:8080/swagger-ui.html, execute `POST /api/v1/payments` duas vezes com o mesmo `X-Idempotency-Key`.
 
 ---
 

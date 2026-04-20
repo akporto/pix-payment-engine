@@ -60,6 +60,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          EXISTING=$(gh pr list --base develop --head "${{ github.ref_name }}" --json number --jq 'length')
+          if [ "$EXISTING" -gt "0" ]; then
+            echo "PR already exists for ${{ github.ref_name }} → develop. Skipping."
+            exit 0
+          fi
           gh pr create \
             --base develop \
             --head "${{ github.ref_name }}" \
@@ -84,5 +89,4 @@ jobs:
           - Contrato HTTP: status 201/200/422/404/400.
 
           ---
-          > PR criado automaticamente pelo workflow \`ci.yml\`. Revise antes de fazer o merge." \
-          || echo "PR already exists for this branch."
+          > PR criado automaticamente pelo workflow \`ci.yml\`. Revise antes de fazer o merge."

@@ -61,6 +61,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          EXISTING=$(gh pr list --base main --head develop --json number --jq 'length')
+          if [ "$EXISTING" -gt "0" ]; then
+            echo "PR already exists for develop → main. Skipping."
+            exit 0
+          fi
           gh pr create \
             --base main \
             --head develop \
@@ -90,5 +95,4 @@ jobs:
 
           ---
           > PR criado automaticamente pelo workflow \`promote-to-main.yml\` após merge em \`develop\`.
-          > **Não faça squash/rebase** — preserve o histórico de commits para rastreabilidade." \
-          || echo "PR already exists for develop → main."
+          > **Não faça squash/rebase** — preserve o histórico de commits para rastreabilidade."
